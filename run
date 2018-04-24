@@ -1,0 +1,82 @@
+#!/bin/bash
+
+#
+# run.sh - Driver for the CPSC411 MiniJava Compiler's passes
+#
+
+# Author: Norm Hutchinson
+# Modified by Ron Garcia, 2016-2017
+# Modified by Felipe Banados Schwerter, 2017
+
+PROJECT=.
+
+JARS="$PROJECT/backend/target/backend-1.0-SNAPSHOT.jar:\
+$PROJECT/frontend/target/frontend-1.0-SNAPSHOT.jar:\
+$PROJECT/ir/target/ir-1.0-SNAPSHOT.jar:\
+$PROJECT/opt/target/opt-1.0-SNAPSHOT.jar:\
+$PROJECT/x86_64sim/target/x86_64sim-1.0-SNAPSHOT.jar:\
+$PROJECT/util/target/util-1.0-SNAPSHOT.jar"
+
+# IntelliJ Build button doesn't create JARs, so use the compiled classes
+CLASSPATH="$PROJECT/backend/target/classes:\
+$PROJECT/frontend/target/classes:\
+$PROJECT/ir/target/classes:\
+$PROJECT/opt/target/classes:\
+$PROJECT/x86_64sim/target/classes:\
+$PROJECT/util/target/classes"
+
+#CLASSPATH="$JARS"
+
+export CLASSPATH
+
+
+if [ $# -ne 2 ]; then
+   cat <<EOF ;
+   Usage:
+   run <CMD> file
+   CMDs:
+     parse, type, ir, gen, sim, flow, live, interf, reg, final,
+EOF
+   exit 1;
+fi
+
+
+echo "Program: $2"
+cat $2
+echo ""
+
+# Extra argument(s) to drivers
+arg=
+
+pass=$1
+case $pass in
+    ([Pp]ar*)
+	pass=Parser  ;;
+    ([Ff]low*)
+	pass=FlowGraph ;;
+    ([Gg]en* | [Cc]ode)
+	pass=Generate ;;
+    ([Ii]nt*)
+	pass=Interference ;;
+    ([Rr]eg*)
+	pass=RegAlloc ;;
+    ([Vv][Rr]eg*)
+	pass=RegAlloc ; arg=-v;;
+    ([Ff]inal*)
+	pass=Final ;;
+    ([Tt]ran* | [Ii][Rr]*)
+	pass=Translate ;;
+    ([Tt]ype* | [Cc]heck*)
+	pass=TypeChecker ;;
+    ([Ss]im*)
+     	pass=Simulate ;;
+    ([Ll]ive*)
+    	pass=Liveness ;;
+    # ([Rr]un* | [Ee]xec*)
+    # 	pass=Run ;;
+    (*)
+	echo "Don't understand $pass";
+	exit 1;;
+esac
+
+java driver.D$pass $2 $arg
